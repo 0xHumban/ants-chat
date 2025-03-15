@@ -17,6 +17,7 @@ import (
 // data: dataset to send to client
 // response: response of the client after calculations
 type Marmot struct {
+	Name     string
 	conn     net.Conn
 	start    chan bool
 	end      chan bool
@@ -115,6 +116,32 @@ func (ms Marmots) CloseConnections() {
 
 }
 
+// sends messages to all Ants connected to server except the from one
+func (ms Marmots) publishChat(c Chat) {
+	// NOTE: Maybe do not Pings all clients to gain latency between messages
+	ms.Pings()
+	printDebug(fmt.Sprintf("Publish Chat start, Chat: '%s'", c.String()))
+	// add chat to all marmot except the from one
+	chatEncoded, err := c.encode()
+	if err != nil {
+		printError(fmt.Sprintf("During publish chat, encoding chat: %s", err))
+		return
+	}
+	for _, m := range ms {
+		if m != nil && m.Name != c.FromClientName {
+			m.data = createMessage("2", ChatType, chatEncoded)
+		}
+	}
+	ms.performAction((*Marmot).publishChat)
+	ms.WaitEnd()
+	printDebug(fmt.Sprintf("Publish Chat end, Chat: '%s'", c.String()))
+}
+
+// send Chat to client
+func (m *Marmot) publishChat() {
+	m.SendeData("publish chat", true)
+}
+
 // close the connection with the client
 // it sends 'exit' for properly closed
 func (m *Marmot) Close() {
@@ -139,32 +166,27 @@ func (ms Marmots) WaitEnd() {
 
 }
 
-func (m *Marmot) PrimeNumber() {
-	// wait for start / timeout
-	<-m.start
-	// sending data
-	res := m.writeData(true)
-	if res {
-		res = m.readResponse()
-	} else {
-		printDebug("error sending 'Prime number calculation'")
-		m.end <- false
-		return
-	}
-	if !res {
-		printDebug("error receiving 'Prime number calculation result'")
-		m.end <- false
-		return
-	}
-	m.end <- true
-
-}
-
 func (m *Marmot) Ping() {
 
 	// send 'ping' to client
 	m.data = createMessage("0", String, []byte("Ping"))
 	m.SendAndReceiveData("Ping/Pong", false)
+}
+
+// Can be used with a wrapper
+// Send the data inside the marmot
+func (m *Marmot) SendeData(functionName string, showMessageSent bool) {
+
+	// wait for start / timeout
+	<-m.start
+	res := m.writeData(showMessageSent)
+	if !res {
+		printDebug(fmt.Sprintf("error sending '%s'", functionName))
+		m.end <- false
+		return
+	}
+
+	m.end <- true
 }
 
 // Can be used with a wrapper

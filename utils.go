@@ -40,7 +40,8 @@ func showMenu() {
 	fmt.Println("1. Show connected marmot")
 	fmt.Println("2. Send ping to clients")
 	fmt.Println("3. Close connections")
-	fmt.Println("4. Exit (will let clients trying to reconnect to server)")
+	fmt.Println("4. Send test Chat to all clients")
+	fmt.Println("5. Exit (will let clients trying to reconnect to server)")
 	fmt.Print("Choose an option:\n")
 }
 
@@ -60,6 +61,8 @@ func handleMenu(marmots Marmots) {
 		case "3":
 			marmots.CloseConnections()
 		case "4":
+			handlePublishChatTestMenu(marmots)
+		case "5":
 			return
 		default:
 			printError("Invalid option, please try again.")
