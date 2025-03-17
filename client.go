@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
+	"os"
+	"strings"
 	"time"
 )
 
-var ClientVersion = 5
+var ClientVersion = 6
 
 var UpdateFilePath = "build/client-"
 var UpdateFilename = fmt.Sprintf("%s%d", UpdateFilePath, ClientVersion)
@@ -104,7 +107,9 @@ func connectToServer(ip string) {
 */
 
 func connectToServer(ip string) {
+	clientName := getClientName()
 	connectionClosedProperly := make(chan bool, 1)
+	stopHandlingClientMessage := make(chan bool, 1)
 	connectionClosedProperly <- false
 	for !<-connectionClosedProperly {
 		conn, err := net.Dial("tcp", ip)
@@ -117,6 +122,7 @@ func connectToServer(ip string) {
 			printDebug("Remote address: " + conn.RemoteAddr().String())
 			marmot := NewMarmot(conn)
 			go marmot.handleConnectionClientSide(connectionClosedProperly)
+			go marmot.handleChatClient(clientName, stopHandlingClientMessage)
 		}
 		if !<-connectionClosedProperly {
 			time.Sleep(RetryDelais * time.Second)
@@ -125,4 +131,33 @@ func connectToServer(ip string) {
 			connectionClosedProperly <- true
 		}
 	}
+	stopHandlingClientMessage <- true
+}
+
+// handle messages typing of the client
+// client can write message and send it to server
+// server will pubilsh them across others clients
+func (server *Marmot) handleChatClient(clientName string, stopHandlingClientMesssage chan bool) {
+	fmt.Println("To send a Chat: \nEnter your message and press 'ENTER:'")
+	scanner := bufio.NewScanner(os.Stdin)
+	// TODO: implements stopHandlingClientMesssage
+	chat := Chat{clientName, ""}
+	for {
+		// fmt.Println("Your message:")
+		scanner.Scan()
+
+		message := strings.TrimSpace(scanner.Text())
+		chat.Text = message
+		server.SendChat(chat)
+	}
+
+}
+
+// ask to client his name
+func getClientName() string {
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("Please enter your name: ")
+	scanner.Scan()
+	choice := strings.TrimSpace(scanner.Text())
+	return choice
 }

@@ -116,32 +116,6 @@ func (ms Marmots) CloseConnections() {
 
 }
 
-// sends messages to all Ants connected to server except the from one
-func (ms Marmots) publishChat(c Chat) {
-	// NOTE: Maybe do not Pings all clients to gain latency between messages
-	ms.Pings()
-	printDebug(fmt.Sprintf("Publish Chat start, Chat: '%s'", c.String()))
-	// add chat to all marmot except the from one
-	chatEncoded, err := c.encode()
-	if err != nil {
-		printError(fmt.Sprintf("During publish chat, encoding chat: %s", err))
-		return
-	}
-	for _, m := range ms {
-		if m != nil && m.Name != c.FromClientName {
-			m.data = createMessage("2", ChatType, chatEncoded)
-		}
-	}
-	ms.performAction((*Marmot).publishChat)
-	ms.WaitEnd()
-	printDebug(fmt.Sprintf("Publish Chat end, Chat: '%s'", c.String()))
-}
-
-// send Chat to client
-func (m *Marmot) publishChat() {
-	m.SendeData("publish chat", true)
-}
-
 // close the connection with the client
 // it sends 'exit' for properly closed
 func (m *Marmot) Close() {
@@ -175,7 +149,7 @@ func (m *Marmot) Ping() {
 
 // Can be used with a wrapper
 // Send the data inside the marmot
-func (m *Marmot) SendeData(functionName string, showMessageSent bool) {
+func (m *Marmot) SendData(functionName string, showMessageSent bool) {
 
 	// wait for start / timeout
 	<-m.start
@@ -233,6 +207,7 @@ func (m *Marmot) readResponse() bool {
 			// read the Message size to create right sized buffer
 			var messageLength uint32
 			err := binary.Read(m.conn, binary.BigEndian, &messageLength)
+			printHighDebug(fmt.Sprintf("@%s | encoded data (message): from readresponse: %d\n", m.conn.RemoteAddr(), messageLength))
 			// _, err := m.conn.Read(header)
 			if err != nil {
 				printError(fmt.Sprintf("reading header: %s", err))
@@ -285,6 +260,7 @@ func (m *Marmot) writeData(show bool) bool {
 		go func() {
 			n := -1
 			encodedData, err := m.data.encode()
+			printHighDebug(fmt.Sprintf("@%s | encoded data (message): from write data: %d\n", m.conn.RemoteAddr(), len(encodedData)))
 			if err != nil {
 				innerChan <- result{n, err}
 				return

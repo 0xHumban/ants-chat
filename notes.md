@@ -10,3 +10,7 @@ Message received from server and show it: `2`
 ## Step 3: Network discovery
 At the start, the client don't know the server IP, to get it, client will use udp broadcast.
 
+
+
+
+TODO: ajoter envoie nom du client au serveru lors de la connecxion
