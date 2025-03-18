@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -9,13 +10,13 @@ import (
 	"time"
 )
 
-var ClientVersion = 6
+var ClientVersion = 7
 
 var UpdateFilePath = "build/client-"
 var UpdateFilename = fmt.Sprintf("%s%d", UpdateFilePath, ClientVersion)
 
 const ServerIP = "127.0.0.1:8080"
-const RetryDelais = 5
+const RetryDelais = 2
 
 // handle connection client side
 // client waiting for server instructions
@@ -111,6 +112,7 @@ func connectToServer(ip string) {
 	connectionClosedProperly := make(chan bool, 1)
 	stopHandlingClientMessage := make(chan bool, 1)
 	connectionClosedProperly <- false
+	var marmot *Marmot
 	for !<-connectionClosedProperly {
 		conn, err := net.Dial("tcp", ip)
 		if err != nil {
@@ -120,9 +122,13 @@ func connectToServer(ip string) {
 			// DEBUG
 			printDebug("Local address: " + conn.LocalAddr().String())
 			printDebug("Remote address: " + conn.RemoteAddr().String())
-			marmot := NewMarmot(conn)
+			marmot = NewMarmot(conn)
 			go marmot.handleConnectionClientSide(connectionClosedProperly)
 			go marmot.handleChatClient(clientName, stopHandlingClientMessage)
+			connectionBroken := <-connectionClosedProperly
+			stopHandlingClientMessage <- true
+			connectionClosedProperly <- connectionBroken
+
 		}
 		if !<-connectionClosedProperly {
 			time.Sleep(RetryDelais * time.Second)
@@ -131,7 +137,6 @@ func connectToServer(ip string) {
 			connectionClosedProperly <- true
 		}
 	}
-	stopHandlingClientMessage <- true
 }
 
 // handle messages typing of the client
@@ -142,15 +147,32 @@ func (server *Marmot) handleChatClient(clientName string, stopHandlingClientMess
 	scanner := bufio.NewScanner(os.Stdin)
 	// TODO: implements stopHandlingClientMesssage
 	chat := Chat{clientName, ""}
+	ctx, cancel := context.WithCancel(context.Background())
+	stopHandling := false
 	for {
-		// fmt.Println("Your message:")
-		scanner.Scan()
+		go func() {
+			<-stopHandlingClientMesssage
+			printDebug("Stop handling Client message chan value received ")
+			stopHandling = true
+			cancel()
+		}()
 
-		message := strings.TrimSpace(scanner.Text())
-		chat.Text = message
-		server.SendChat(chat)
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			scanner.Scan()
+			message := strings.TrimSpace(scanner.Text())
+			if stopHandling {
+				fmt.Println("Client disconnected from the server, please retry")
+				return
+			}
+			if message != "" {
+				chat.Text = message
+				server.SendChat(chat)
+			}
+		}
 	}
-
 }
 
 // ask to client his name

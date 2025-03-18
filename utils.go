@@ -51,11 +51,11 @@ func printError(text string) {
 
 func showMenu() {
 	fmt.Println("\n===== Menu ===== ")
-	fmt.Println("1. Show connected marmot")
-	fmt.Println("2. Send ping to clients")
+	// fmt.Println("1. Show connected marmot")
+	// fmt.Println("2. Send ping to clients")
 	fmt.Println("3. Close connections")
 	fmt.Println("4. Send test Chat to all clients")
-	fmt.Println("5. Start server mode (received and publish chat)")
+	// fmt.Println("5. Start server mode (received and publish chat)")
 	fmt.Println("6. Exit (will let clients trying to reconnect to server)")
 	fmt.Print("Choose an option:\n")
 }
@@ -69,16 +69,16 @@ func handleMenu(marmots Marmots) {
 		choice := strings.TrimSpace(scanner.Text())
 
 		switch choice {
-		case "1":
-			marmots.ShowConnected()
-		case "2":
-			marmots.Pings()
+		// case "1":
+		// 	marmots.ShowConnected()
+		// case "2":
+		// 	marmots.Pings()
 		case "3":
 			marmots.CloseConnections()
 		case "4":
 			handlePublishChatTestMenu(marmots)
-		case "5":
-			marmots.handleServerChats()
+		// case "5":
+		// 	marmots.handleServerChats()
 		case "6":
 			return
 		default:

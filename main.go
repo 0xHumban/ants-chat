@@ -11,6 +11,7 @@ func main() {
 	marmots := make([]*Marmot, ClientNumber)
 	// open server
 	if len(argWithoutProg) > 0 {
+		fmt.Println("Start handling chats")
 		go openConnection(ServerPort, marmots)
 		handleMenu(marmots)
 	} else {

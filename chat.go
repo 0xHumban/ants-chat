@@ -50,7 +50,13 @@ func (ms Marmots) publishChat(c Chat) {
 		}
 	}
 	ms.performAction((*Marmot).publishChat)
-	ms.WaitEnd()
+	// if a client disconnect, remove it
+	for i, m := range ms {
+		if m != nil && !<-m.end {
+			ms[i] = nil
+			printDebug("@" + m.conn.RemoteAddr().String() + " has been removed of the clients list")
+		}
+	}
 	printDebug(fmt.Sprintf("Publish Chat end, Chat: '%s'", c.String()))
 }
 
@@ -90,16 +96,23 @@ func (m *Marmot) handleServerChatsForOne(ms Marmots) {
 
 		res := m.readResponse()
 		if !res {
-			printDebug("ERROR reading server response")
-			continue
+			printDebug("ERROR reading client response")
+			m.Close()
+			printDebug("@" + m.conn.RemoteAddr().String() + " has been removed of the clients list")
+			m = nil
+			break
 		}
 
 		printDebug(fmt.Sprintf("New chat received from client: @%s", m.conn.RemoteAddr()))
 		chat, err := decodeChat(m.response.Data)
 		if err != nil {
 			printError(fmt.Sprintf("error during decoding chat data: %s", err))
-			continue
+			m.Close()
+			printDebug("@" + m.conn.RemoteAddr().String() + " has been removed of the clients list")
+			m = nil
+			break
 		}
+		fmt.Println(chat.String())
 		ms.publishChat(*chat)
 
 	}
@@ -123,6 +136,7 @@ func handlePublishChatTestMenu(ms Marmots) {
 			return
 		} else {
 			c.Text = choice
+			fmt.Println(c.String())
 			ms.publishChat(c)
 			return
 		}
