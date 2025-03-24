@@ -67,6 +67,7 @@ func (m *Marmot) treatChatServerResponse() {
 		}
 		// show it
 		fmt.Println(chat.String())
+		addMessage(chat.String())
 	}
 }
 
@@ -107,12 +108,11 @@ func connectToServer(ip string) {
 
 */
 
-func connectToServer(ip string) {
+func connectToServer(ip string, marmot **Marmot) {
 	clientName := getClientName()
 	connectionClosedProperly := make(chan bool, 1)
 	stopHandlingClientMessage := make(chan bool, 1)
 	connectionClosedProperly <- false
-	var marmot *Marmot
 	for !<-connectionClosedProperly {
 		conn, err := net.Dial("tcp", ip)
 		if err != nil {
@@ -122,9 +122,10 @@ func connectToServer(ip string) {
 			// DEBUG
 			printDebug("Local address: " + conn.LocalAddr().String())
 			printDebug("Remote address: " + conn.RemoteAddr().String())
-			marmot = NewMarmot(conn)
-			go marmot.handleConnectionClientSide(connectionClosedProperly)
-			go marmot.handleChatClient(clientName, stopHandlingClientMessage)
+			*marmot = NewMarmot(conn)
+			(*marmot).Name = clientName
+			go (*marmot).handleConnectionClientSide(connectionClosedProperly)
+			go (*marmot).handleChatClient(clientName, stopHandlingClientMessage)
 			connectionBroken := <-connectionClosedProperly
 			stopHandlingClientMessage <- true
 			connectionClosedProperly <- connectionBroken
