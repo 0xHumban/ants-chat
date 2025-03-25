@@ -1,11 +1,11 @@
 package main
 
 import (
-	// "fmt"
+	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
-	// "fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -17,33 +17,27 @@ func createApp(server **Marmot) {
 
 	myWindow := myApp.NewWindow("Message App")
 
-	// Créer un conteneur pour les messages
+	showInputDialog(myWindow, server)
+
 	ChatContainer = container.NewVBox()
 
-	// Créer un champ de saisie
 	entry := widget.NewEntry()
 	entry.SetPlaceHolder("Entrez votre message...")
 
-	// Créer un bouton pour envoyer le message
 	sendButton := widget.NewButton("Envoyer", func() {
 		chat := Chat{(*server).Name, entry.Text}
 		(*server).SendChat(chat)
-		// addMessage(entry.Text)
 		entry.SetText("")
 	})
 
-	// Gérer l'appui sur la touche Entrée dans le champ de saisie
 	entry.OnSubmitted = func(text string) {
 		chat := Chat{(*server).Name, text}
 		(*server).SendChat(chat)
-		// addMessage(text)
 		entry.SetText("")
 	}
 
-	// Créer un conteneur pour le champ de saisie et le bouton
 	inputContainer := container.NewVBox(entry, sendButton)
 
-	// Créer un conteneur principal avec la zone de messages en haut et le champ de saisie en bas
 	content := container.NewBorder(nil, inputContainer, nil, nil, container.NewVScroll(ChatContainer))
 
 	myWindow.SetContent(content)
@@ -59,4 +53,41 @@ func addMessage(text string) {
 		ChatContainer.Add(widget.NewLabel(text))
 		ChatContainer.Refresh()
 	}
+}
+
+// Function to show the input dialog and retrieve user input
+func showInputDialog(window fyne.Window, server **Marmot) {
+	nameEntry := widget.NewEntry()
+	nameEntry.SetPlaceHolder("Enter your name...")
+
+	ipEntry := widget.NewEntry()
+	ipEntry.SetText(ServerIP) // Default IP address
+
+	// Function to check inputs and re-open dialog if empty
+	var showDialog func()
+	showDialog = func() {
+		form := container.NewVBox(
+			widget.NewLabel("Please enter your information:"),
+			widget.NewLabel("Name:"),
+			nameEntry,
+			widget.NewLabel("Server IP:"),
+			ipEntry,
+		)
+
+		dialog.ShowCustomConfirm("Required Information", "Confirm", "", form, func(confirmed bool) {
+			if nameEntry.Text == "" {
+				showDialog() // Reopen if name is empty (IP has a default)
+			} else {
+				fmt.Println("Name:", nameEntry.Text)
+				fmt.Println("Server IP:", ipEntry.Text)
+				ServerIP = ipEntry.Text
+				ClientName = nameEntry.Text
+				go connectToServer(ServerIP, server)
+				window.Show()
+			}
+		}, window)
+	}
+
+	showDialog() // Show dialog initially
+
 }

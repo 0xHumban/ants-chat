@@ -19,7 +19,6 @@ func main() {
 		Debug = false
 		var marmot *Marmot
 		// TODO: find server ip with udp broadcast
-		go connectToServer(ServerIP, &marmot)
 		createApp(&marmot)
 	}
 }

@@ -15,7 +15,9 @@ var ClientVersion = 7
 var UpdateFilePath = "build/client-"
 var UpdateFilename = fmt.Sprintf("%s%d", UpdateFilePath, ClientVersion)
 
-const ServerIP = "127.0.0.1:8080"
+var ServerIP = "127.0.0.1:8080"
+var ClientName = "Anon"
+
 const RetryDelais = 2
 
 // handle connection client side
@@ -82,34 +84,9 @@ func (m *Marmot) treatStringServerResponse() {
 	}
 }
 
-// saves the file stored in data on local system
-// start it and kill the old one
-// TODO: add verification
-/*
-func connectToServer(ip string) {
-	connectionClosedProperly := false
-
-	for !connectionClosedProperly {
-		conn, err := net.Dial("tcp", ip)
-		if err != nil {
-			fmt.Println("ERROR connecting to server", err)
-		} else {
-			// DEBUG
-			printDebug("Local address: " + conn.LocalAddr().String())
-			printDebug("Remote address: " + conn.RemoteAddr().String())
-			marmot := NewMarmot(conn)
-			connectionClosedProperly = marmot.handleConnectionClientSide()
-		}
-		if !connectionClosedProperly {
-			time.Sleep(RetryDelais * time.Second)
-		}
-	}
-}
-
-*/
-
 func connectToServer(ip string, marmot **Marmot) {
-	clientName := getClientName()
+	// clientName := getClientName()
+	clientName := ClientName
 	connectionClosedProperly := make(chan bool, 1)
 	stopHandlingClientMessage := make(chan bool, 1)
 	connectionClosedProperly <- false
