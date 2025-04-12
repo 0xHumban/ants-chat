@@ -10,12 +10,14 @@ import (
 	"time"
 )
 
-var ClientVersion = 7
+var ClientVersion = 10
 
 var UpdateFilePath = "build/client-"
 var UpdateFilename = fmt.Sprintf("%s%d", UpdateFilePath, ClientVersion)
 
-const ServerIP = "127.0.0.1:8080"
+var ServerIP = "127.0.0.1:8080"
+var ClientName = "Anon"
+
 const RetryDelais = 2
 
 // handle connection client side
@@ -34,8 +36,7 @@ func (m *Marmot) handleConnectionClientSide(connectionClosedProperly chan bool) 
 		}
 		if m.response.isExit() {
 			printDebug("EXIT request received")
-			connectionClosedProperly <- true
-			return true
+			continue
 		}
 
 		m.treatServerResponse()
@@ -67,6 +68,7 @@ func (m *Marmot) treatChatServerResponse() {
 		}
 		// show it
 		fmt.Println(chat.String())
+		addMessage(chat.String())
 	}
 }
 
@@ -81,38 +83,12 @@ func (m *Marmot) treatStringServerResponse() {
 	}
 }
 
-// saves the file stored in data on local system
-// start it and kill the old one
-// TODO: add verification
-/*
-func connectToServer(ip string) {
-	connectionClosedProperly := false
-
-	for !connectionClosedProperly {
-		conn, err := net.Dial("tcp", ip)
-		if err != nil {
-			fmt.Println("ERROR connecting to server", err)
-		} else {
-			// DEBUG
-			printDebug("Local address: " + conn.LocalAddr().String())
-			printDebug("Remote address: " + conn.RemoteAddr().String())
-			marmot := NewMarmot(conn)
-			connectionClosedProperly = marmot.handleConnectionClientSide()
-		}
-		if !connectionClosedProperly {
-			time.Sleep(RetryDelais * time.Second)
-		}
-	}
-}
-
-*/
-
-func connectToServer(ip string) {
-	clientName := getClientName()
+func connectToServer(ip string, marmot **Marmot) {
+	// clientName := getClientName()
+	clientName := ClientName
 	connectionClosedProperly := make(chan bool, 1)
 	stopHandlingClientMessage := make(chan bool, 1)
 	connectionClosedProperly <- false
-	var marmot *Marmot
 	for !<-connectionClosedProperly {
 		conn, err := net.Dial("tcp", ip)
 		if err != nil {
@@ -122,9 +98,10 @@ func connectToServer(ip string) {
 			// DEBUG
 			printDebug("Local address: " + conn.LocalAddr().String())
 			printDebug("Remote address: " + conn.RemoteAddr().String())
-			marmot = NewMarmot(conn)
-			go marmot.handleConnectionClientSide(connectionClosedProperly)
-			go marmot.handleChatClient(clientName, stopHandlingClientMessage)
+			*marmot = NewMarmot(conn)
+			(*marmot).Name = clientName
+			go (*marmot).handleConnectionClientSide(connectionClosedProperly)
+			go (*marmot).handleChatClient(clientName, stopHandlingClientMessage)
 			connectionBroken := <-connectionClosedProperly
 			stopHandlingClientMessage <- true
 			connectionClosedProperly <- connectionBroken

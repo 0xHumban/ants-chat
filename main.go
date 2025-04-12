@@ -17,6 +17,7 @@ func main() {
 	} else {
 		// its client, connect to server
 		Debug = false
-		connectToServer(ServerIP)
+		var marmot *Marmot
+		createApp(&marmot)
 	}
 }
