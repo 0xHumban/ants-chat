@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var ClientVersion = 7
+var ClientVersion = 10
 
 var UpdateFilePath = "build/client-"
 var UpdateFilename = fmt.Sprintf("%s%d", UpdateFilePath, ClientVersion)
@@ -36,8 +36,7 @@ func (m *Marmot) handleConnectionClientSide(connectionClosedProperly chan bool) 
 		}
 		if m.response.isExit() {
 			printDebug("EXIT request received")
-			connectionClosedProperly <- true
-			return true
+			continue
 		}
 
 		m.treatServerResponse()

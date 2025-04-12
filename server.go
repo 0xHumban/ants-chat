@@ -19,6 +19,20 @@ func openConnection(port string, marmots Marmots) {
 		fmt.Println("ERROR during listening:", err)
 	}
 
+	// get network interfaces
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		printError(fmt.Sprintf("Error getting network interfaces:", err))
+		return
+	}
+
+	printDebug("Server is listening on:")
+	for _, addr := range addrs {
+		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
+			printDebug(fmt.Sprintf(" - %s%s\n", ipNet.IP.String(), port))
+		}
+	}
+
 	defer ln.Close()
 
 	printDebug("Server waiting for connections")
