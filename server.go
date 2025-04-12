@@ -34,6 +34,7 @@ func openConnection(port string, marmots Marmots) {
 		for i := 0; i < ClientNumber; i++ {
 			if marmots[i] == nil {
 				marmots[i] = NewMarmot(conn)
+				go marmots[i].handleServerChatsForOne(marmots)
 				break
 			}
 		}

@@ -17,6 +17,7 @@ import (
 // data: dataset to send to client
 // response: response of the client after calculations
 type Marmot struct {
+	Name     string
 	conn     net.Conn
 	start    chan bool
 	end      chan bool
@@ -139,32 +140,27 @@ func (ms Marmots) WaitEnd() {
 
 }
 
-func (m *Marmot) PrimeNumber() {
-	// wait for start / timeout
-	<-m.start
-	// sending data
-	res := m.writeData(true)
-	if res {
-		res = m.readResponse()
-	} else {
-		printDebug("error sending 'Prime number calculation'")
-		m.end <- false
-		return
-	}
-	if !res {
-		printDebug("error receiving 'Prime number calculation result'")
-		m.end <- false
-		return
-	}
-	m.end <- true
-
-}
-
 func (m *Marmot) Ping() {
 
 	// send 'ping' to client
 	m.data = createMessage("0", String, []byte("Ping"))
 	m.SendAndReceiveData("Ping/Pong", false)
+}
+
+// Can be used with a wrapper
+// Send the data inside the marmot
+func (m *Marmot) SendData(functionName string, showMessageSent bool) {
+
+	// wait for start / timeout
+	<-m.start
+	res := m.writeData(showMessageSent)
+	if !res {
+		printDebug(fmt.Sprintf("error sending '%s'", functionName))
+		m.end <- false
+		return
+	}
+
+	m.end <- true
 }
 
 // Can be used with a wrapper
@@ -211,6 +207,7 @@ func (m *Marmot) readResponse() bool {
 			// read the Message size to create right sized buffer
 			var messageLength uint32
 			err := binary.Read(m.conn, binary.BigEndian, &messageLength)
+			printHighDebug(fmt.Sprintf("@%s | encoded data (message): from readresponse: %d\n", m.conn.RemoteAddr(), messageLength))
 			// _, err := m.conn.Read(header)
 			if err != nil {
 				printError(fmt.Sprintf("reading header: %s", err))
@@ -263,6 +260,7 @@ func (m *Marmot) writeData(show bool) bool {
 		go func() {
 			n := -1
 			encodedData, err := m.data.encode()
+			printHighDebug(fmt.Sprintf("@%s | encoded data (message): from write data: %d\n", m.conn.RemoteAddr(), len(encodedData)))
 			if err != nil {
 				innerChan <- result{n, err}
 				return

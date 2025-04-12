@@ -13,6 +13,7 @@ type MessageType int
 const (
 	String MessageType = iota
 	BinaryFile
+	ChatType
 )
 
 // Struct used to send / receive data between client and server
@@ -20,9 +21,7 @@ const (
 // -1: Update client with new file
 // 0: Ping
 // 1: Close connection (exit)
-// 2: Counting letter
-// 3: Calculate if a number is prime
-// 4: Calculate pi estimation
+// 2: Message received and show it
 // Type: the of the message, string or binary file
 // Data: data used to process the message
 type Message struct {
@@ -35,6 +34,8 @@ func (m Message) String() string {
 	switch m.Type {
 	case BinaryFile:
 		return fmt.Sprintf("id: %s The current message is a binary file", m.ID)
+	case ChatType:
+		return fmt.Sprintf("id: %s Chat", m.ID)
 	default:
 		return fmt.Sprintf("id: %s Data: '%s'", m.ID, string(m.Data))
 	}

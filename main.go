@@ -9,10 +9,14 @@ func main() {
 	printDebug(fmt.Sprintf("Current software version: %d", ClientVersion))
 	argWithoutProg := os.Args[1:]
 	marmots := make([]*Marmot, ClientNumber)
+	// open server
 	if len(argWithoutProg) > 0 {
+		fmt.Println("Start handling chats")
 		go openConnection(ServerPort, marmots)
 		handleMenu(marmots)
 	} else {
+		// its client, connect to server
+		Debug = false
 		connectToServer(ServerIP)
 	}
 }
