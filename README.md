@@ -8,10 +8,7 @@ This project is designed to be educational and fun, providing a hands-on experie
 
 ## 🎬 Demo Video
 
-<video src="assets/demo.webm" controls width="600">
-  Your browser does not support the video tag.
-</video>
-
+![ANts chat demo](assets/demo.gif)
 ---
 
 ![Ants chat schema](assets/ants-chat-schem.png)
